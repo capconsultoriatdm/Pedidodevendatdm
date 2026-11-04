@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>TDM Gestão • Portas e Cabanas</title>
+<meta name="theme-color" content="#182720">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icone-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/icone-192.png">
+<link rel="stylesheet" href="css/estilos.css?v=2">
+<link rel="stylesheet" href="css/tema.css?v=2">
+</head>
+<body class="tela-login">
+
+<!-- ================= LOGIN ================= -->
+<div id="login" class="login">
+  <div class="login-marca">
+    <img src="icons/logo-dourado.png" alt="TDM" class="login-logo">
+    <div class="login-titulo">TDM Portas e Cabanas</div>
+    <div class="login-sub">Sistema de gestão de pedidos, orçamentos e custos</div>
+    <div class="login-rodape">CNPJ 25.999.603/0001-70 · Rodeio/SC</div>
+  </div>
+  <div class="login-area">
+    <div class="login-card">
+      <img src="icons/logo-dourado.png" alt="TDM" class="login-logo-mobile">
+      <h1>Acesso ao sistema</h1>
+      <p class="login-desc">Entre com o e-mail e a senha cadastrados.</p>
+      <div id="loginErro" class="login-msg erro" hidden></div>
+      <div id="loginInfo" class="login-msg info" hidden></div>
+      <form id="formLogin" autocomplete="on" novalidate>
+        <label class="lf"><span>E-mail</span>
+          <input id="loginEmail" name="email" type="email" autocomplete="username" inputmode="email" placeholder="seu@email.com" required>
+        </label>
+        <label class="lf"><span>Senha</span>
+          <div class="senha-wrap">
+            <input id="loginSenha" name="password" type="password" autocomplete="current-password" placeholder="Sua senha" required>
+            <button type="button" id="btnVerSenha" class="ver-senha" aria-label="Mostrar senha" title="Mostrar / ocultar senha">
+              <svg class="olho" viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg class="olho-off" viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 5.1A10 10 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.2 4.1M6.6 6.6C3.8 8.3 2 12 2 12s3.6 7 10 7a9.7 9.7 0 0 0 5.4-1.6M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>
+            </button>
+          </div>
+        </label>
+        <div class="login-linha">
+          <label class="check"><input type="checkbox" id="loginLembrar" checked> <span>Lembrar meus dados</span></label>
+          <button type="button" class="link" id="btnEsqueci">Esqueci minha senha</button>
+        </div>
+        <button type="submit" class="btn-entrar" id="btnEntrar"><span>Entrar</span></button>
+      </form>
+      <form id="formNovaSenha" hidden>
+        <label class="lf"><span>Nova senha</span><input id="novaSenha1" type="password" autocomplete="new-password" minlength="6" required></label>
+        <label class="lf"><span>Repita a nova senha</span><input id="novaSenha2" type="password" autocomplete="new-password" minlength="6" required></label>
+        <button type="submit" class="btn-entrar"><span>Salvar nova senha</span></button>
+      </form>
+      <div class="login-seguro"><svg viewBox="0 0 24 24"><path d="M6 10V8a6 6 0 1 1 12 0v2M5 10h14v11H5z"/></svg> Conexão segura · acesso individual por usuário</div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= SISTEMA ================= -->
+<div class="app" id="app">
+  <aside class="side" id="side">
+    <div class="brand">
+      <img src="icons/logo-dourado.png" alt="TDM">
+      <div><b>TDM Gestão</b><small>Portas e Cabanas</small></div>
+    </div>
+    <nav class="nav" id="nav"></nav>
+    <div class="side-foot">
+      <div class="user-card"><div class="avatar" id="userAvatar">?</div><div class="user-info"><b id="userNome">—</b><small id="userPapel">—</small></div></div>
+      <button type="button" class="btn-sair" onclick="TDM_sair()"><svg viewBox="0 0 24 24"><path d="M15 4h4v16h-4M10 17l5-5-5-5M15 12H3"/></svg>Sair</button>
+    </div>
+  </aside>
+  <div class="side-fundo" id="sideFundo" onclick="TDMLayout.menu(false)"></div>
+
+  <main class="main">
+    <header class="topbar">
+      <button type="button" class="btn-menu" onclick="TDMLayout.menu(true)" aria-label="Abrir menu"><svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+      <div class="topbar-titulo"><small id="crumb">Pedido</small><h1 id="title">Novo Pedido</h1></div>
+      <div class="topbar-acoes">
+        <span class="pedido-num" id="pedidoNum"></span>
+        <span class="sync-status ok" id="syncStatus" title="Tudo sincronizado"><i></i><span>Sincronizado</span></span>
+        <button type="button" class="btn-top" id="btnTopRelatorio" onclick="TDMRelatorio.abrir()"><svg viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6zM14 2v6h6M9 13h6M9 17h6"/></svg><span>Relatório PDF</span></button>
+        <div class="menu-user">
+          <button type="button" class="btn-top btn-sistema" onclick="TDMLayout.menuSistema(event)" aria-label="Opções"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg></button>
+          <div class="menu-pop" id="menuSistema" hidden>
+            <button type="button" onclick="tdmCompartilharApp()">🔗 Compartilhar link do sistema</button>
+            <button type="button" id="btnInstalarApp" onclick="tdmInstalarApp()">📲 Instalar no aparelho</button>
+            <button type="button" class="so-master" onclick="tdmBackup()">💾 Backup dos dados</button>
+            <label class="so-master">📂 Restaurar backup<input type="file" accept=".json,application/json" hidden onchange="tdmRestaurar(this)"></label>
+            <hr><button type="button" onclick="TDM_sair()">↩ Sair</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="etapas" id="etapas"></div>
+
+    <div class="conteudo" id="conteudo">
+<section id="novo" class="section active">
+<div class="panel" id="dadosPedidoPanel"><h3>1. Dados do Pedido</h3><div class="muted" style="margin:-6px 0 14px">Data do pedido e dados do cliente.</div><div class="order-dates"><div class="field"><label>Nº do pedido</label><input id="numero" readonly></div><div class="field"><label>Data do pedido</label><input id="dataPedido" type="date"></div><div class="field"><label>Previsão de entrega</label><input id="previsaoEntrega" type="date"></div></div><div class="form"><div class="field span2"><label>Nome completo / Razão social</label><input id="cliente" autocomplete="name" placeholder="Digite o nome completo"></div><div class="field span2"><label>CPF ou CNPJ</label><input id="documento" inputmode="numeric" placeholder="CPF ou CNPJ"></div><div class="field span2"><label>Cidade</label><input id="cidadeCliente" list="cidadesSC" autocomplete="off" placeholder="Digite para procurar ou informe outra cidade"><datalist id="cidadesSC"></datalist></div><div class="field span2"><label>Rua</label><input id="ruaCliente" placeholder="Rua / logradouro"></div><div class="field span2"><label>Bairro</label><input id="bairroCliente" placeholder="Bairro"></div><div class="field"><label>Número</label><input id="numeroCliente" placeholder="Nº"></div><div class="field"><label>Telefone / WhatsApp</label><input id="telefone"></div><div class="field span2"><label>E-mail</label><input id="email"></div></div></div>
+<div class="panel" id="medidasPanel"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><div><h3 style="margin-bottom:4px">2. Medidas em loco</h3><div class="muted">Cada vão/porta fica identificado como P01, P02, P03...</div></div><button class="primary" onclick="addItem()">+ Adicionar P</button></div><div id="itens"></div></div>
+<div class="panel" id="componentesPanel"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><div><h3 style="margin-bottom:4px">3. Componentes / Orçamento</h3><div class="muted">Cada P possui seus componentes e valores. Portas de correr mostram trilho e roldanas automaticamente.</div></div></div><div id="componentes"></div><div class="component-grand"><span>Componentes:</span><b id="totalComponentes">R$ 0,00</b></div></div><div class="panel cubagem-panel" id="cubagemPanel"><h3 style="margin-bottom:4px">4. Cálculo de Cubagem da Madeira</h3><button type="button" class="primary" id="addCubagemManual" style="margin:12px 0">+ Adicionar</button><div id="cubagem"></div><div class="cubagem-total"><span>Valor total:</span><b id="totalCubagem">R$ 0,00</b></div></div>
+<div class="panel" id="gastosInstalacaoNovoPanel"><h3>5. Gastos com Instalação</h3><div class="install-expense-box"><div class="expense-head"><b>Lançamentos de gastos</b></div><div id="listaGastosInstalacao"></div><button type="button" class="primary" onclick="addGastoInstalacaoItem()" style="margin-top:12px">+ Adicionar</button><div class="install-expense-subtotal"><span>Total com combustível</span><b id="totalCombustivelInstalacao">R$ 0,00</b></div><div class="install-expense-subtotal"><span>Total com alimentação</span><b id="totalAlimentacaoInstalacao">R$ 0,00</b></div><div class="install-expense-subtotal"><span>Total com frete</span><b id="totalFreteInstalacao">R$ 0,00</b></div><div class="install-expense-subtotal"><span>Total com mão de obra terceirizada</span><b id="totalTerceirizadaInstalacao">R$ 0,00</b></div><div class="install-expense-subtotal"><span>Total com outros</span><b id="totalOutrosGastosInstalacao">R$ 0,00</b></div><div class="install-expense-grand"><span>Total gastos com instalação</span><b id="totalGastosGeraisInstalacao">R$ 0,00</b></div></div></div>
+<div class="panel" id="gastosInstalacaoPanel"><h3>6. Gastos com Mão de Obra</h3><div id="diasInstalacao"></div><button type="button" class="primary" id="addDiaInstalacao" onclick="addDiaInstalacao()" style="margin-top:12px">+ Adicionar novo dia</button><div id="resumoCustosDias" class="daily-cost-summary"></div><div class="labor-cost-breakdown"><div class="labor-cost-breakdown-title">Resumo de Mão de Obra</div><div class="labor-cost-breakdown-sub">Fechamento automático de tudo que foi lançado acima.</div><div class="labor-cost-grid"><div class="labor-cost-card"><span>Horas normais trabalhadas</span><b id="totalHorasNormais">0h 00min</b><strong id="custoHorasNormais">R$ 0,00</strong></div><div class="labor-cost-card"><span>Horas extras trabalhadas</span><b id="totalHorasExtrasTrabalho">0h 00min</b><strong id="custoHorasExtrasTrabalho">R$ 0,00</strong></div><div class="labor-cost-card"><span>Deslocamento normal</span><b id="totalDeslocamentoNormalInstalacao">0h 00min</b><strong id="custoDeslocamentoNormal">R$ 0,00</strong></div><div class="labor-cost-card"><span>Hora extra em deslocamento</span><b id="totalExtraDeslocamentoInstalacao">0h 00min</b><strong id="custoExtraDeslocamento">R$ 0,00</strong></div></div><div class="labor-cost-secondary"><span>Deslocamento total: <b id="totalDeslocamentoInstalacao">0h 00min</b></span></div><div class="labor-cost-total"><span>Custo total de mão de obra do pedido</span><b id="totalGastosInstalacao">R$ 0,00</b></div></div><div class="install-note">Valores calculados automaticamente conforme funcionários, horários, deslocamentos e horas extras lançados.</div></div>
+<div class="panel" id="resumoCustosPedido"><h3>7. Resumo de Custos do Pedido</h3><div class="muted" style="margin:-6px 0 14px">Fechamento automático dos custos calculados no pedido.</div><div class="order-cost-summary"><div class="order-cost-card"><span>Componentes</span><b id="custoPedidoComponentes">R$ 0,00</b></div><div class="order-cost-card"><span>Madeira</span><b id="custoPedidoMadeira">R$ 0,00</b></div><div class="order-cost-card"><span>Materiais, insumos e outros</span><b id="custoPedidoMateriaisInstalacao">R$ 0,00</b></div><div class="order-cost-card"><span>Gastos com combustível</span><b id="custoPedidoCombustivel">R$ 0,00</b></div><div class="order-cost-card"><span>Mão de obra</span><b id="custoPedidoMaoObra">R$ 0,00</b></div><div class="order-cost-total"><span>Custo total do pedido</span><b id="custoTotalPedido">R$ 0,00</b></div></div>
+<div class="sale-builder" id="formacaoPrecoPedido">
+  <h4>Formação profissional do preço de venda</h4>
+  <div class="sale-grid">
+    <div class="field"><label>Custo apurado do pedido</label><input id="custoApuradoVenda" readonly value="R$ 0,00"></div>
+    <div class="field"><label>Outros custos / acréscimos R$</label><input id="outrosAcrescimosVenda" class="sale-money" type="text" inputmode="numeric" value="R$ 0,00" oninput="maskVendaMoney(this);recalcularVendaPorMargem()"></div>
+    <div class="field"><label>Custo final para precificação</label><input id="custoFinalVenda" readonly value="R$ 0,00"></div>
+    <div class="field"><label>Margem de lucro desejada (%)</label><input id="margemVendaPct" type="text" inputmode="decimal" placeholder="0,00%" onfocus="focusPercentual(this)" oninput="inputPercentual(this);recalcularVendaPorMargem()" onblur="blurPercentual(this);recalcularVendaPorMargem()"></div>
+    <div class="field"><label>Impostos sobre a venda (%)</label><input id="impostoVendaPct" type="text" inputmode="decimal" placeholder="0,00%" onfocus="focusPercentual(this)" oninput="inputPercentual(this);recalcularVendaPorMargem()" onblur="blurPercentual(this);recalcularVendaPorMargem()"></div>
+    <div class="field"><label>Impostos estimados R$</label><input id="impostoVendaValor" readonly value="R$ 0,00"></div>
+    <div class="field"><label>Lucro estimado R$</label><input id="lucroVendaCalculado" readonly value="R$ 0,00"></div>
+    <div class="field"><label>Preço de venda calculado</label><input id="precoVendaCalculado" readonly value="R$ 0,00"></div>
+    <div class="field span2"><label>Preço de venda manual / final R$</label><input id="valorVendaFinal" class="sale-money" type="text" inputmode="numeric" value="R$ 0,00" oninput="maskVendaMoney(this);recalcularMargemPorVenda()"></div>
+  </div>
+  <div class="sale-result"><span>Preço final de venda</span><b id="precoVendaResumo">R$ 0,00</b></div>
+  <div class="sale-grid" style="margin-top:12px">
+    <div class="field"><label>Lucro real R$</label><input id="lucroRealVenda" readonly value="R$ 0,00"></div>
+    <div class="field"><label>Margem real sobre a venda</label><input id="margemRealVenda" readonly value="0,00%"></div>
+  </div>
+  <div class="muted" style="margin-top:8px">A margem é calculada sobre o preço de venda. Se você alterar o preço final manualmente, o sistema recalcula automaticamente o lucro e a margem real.</div>
+  <details id="memoriaCalculoVenda" style="margin-top:14px;border:1px solid #e0ded8;border-radius:14px;background:#fafaf8;color:#2e3c35;line-height:1.55;overflow:hidden">
+    <summary style="padding:14px 16px;cursor:pointer;font-weight:700;user-select:none;display:flex;align-items:center;justify-content:space-between;gap:10px">
+      <span>Como o preço foi calculado</span><span style="font-size:12px;font-weight:600;color:#606e67">Toque para abrir / fechar</span>
+    </summary>
+    <div id="memoriaCalculoTexto" style="padding:0 16px 16px">Preencha os custos, impostos e a margem para visualizar a memória detalhada do cálculo.</div>
+  </details>
+</div></div>
+<div class="panel" id="pagamentosPanel"><h3>8. Financeiro</h3>
+<div class="muted" style="margin:-6px 0 14px">O valor do pedido vem automaticamente da precificação. Organize o recebimento em parcelas, com valor, vencimento, forma de pagamento, conta destino e situação.</div>
+<div class="pay-summary"><div><span>Valor total da venda</span><b id="payValorPedido">R$ 0,00</b></div><div><span>Valor distribuído</span><b id="payTotalProgramado">R$ 0,00</b></div><div><span>Diferença</span><b id="paySaldoProgramar">R$ 0,00</b></div><div><span>Valor recebido</span><b id="payTotalRecebido">R$ 0,00</b></div></div>
+<div class="pay-condition-box"><div><label>Condição</label><select id="payCondicao" onchange="aplicarCondicaoPagamento()"><option value="personalizado">Personalizada</option><option value="avista">À vista</option><option value="entrada_saldo">Entrada + saldo</option><option value="parcelado">Parcelado</option></select></div><div><label>Entrada (R$)</label><input id="payEntradaValor" type="text" inputmode="numeric" placeholder="R$ 0,00" onfocus="payMoneyFocus(this)" oninput="payMoneyTyping(this)" onblur="payMoneyBlur(this);aplicarCondicaoPagamento()"></div><div><label>Nº de parcelas</label><select id="payNumParcelas" onchange="aplicarCondicaoPagamento()"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="18">18</option><option value="24">24</option></select></div><div><label>Data da entrada</label><input id="payDataEntrada" type="date" onchange="gerarParcelasV89()"></div><div><label>Intervalo das parcelas (dias)</label><input id="payIntervaloDias" type="number" min="1" step="1" value="30" inputmode="numeric" list="payIntervalosSugestoes" onchange="gerarParcelasV89()"><datalist id="payIntervalosSugestoes"><option value="7"><option value="15"><option value="30"><option value="45"><option value="60"><option value="90"></datalist></div></div>
+<div class="actions" style="margin:14px 0"><button class="primary" type="button" id="btnGerarParcelas" onclick="gerarParcelasV89()">Gerar parcelas</button><button class="secondary" type="button" onclick="addPagamento()">Adicionar parcela</button><button class="secondary" type="button" onclick="limparPagamentos()">Limpar parcelas</button></div>
+<div id="pagamentosLista"></div>
+<div class="pay-totals-note" id="payConferencia">Defina a condição de pagamento para conferir os valores.</div>
+<div class="form" style="margin-top:12px"><div class="field span4"><label>Observações / condição comercial</label><textarea id="pagamentoObs" placeholder="Ex.: 50% de entrada na aprovação e saldo antes da instalação"></textarea></div></div>
+<div class="receipt-actions"><button class="secondary" type="button" onclick="salvarPedidoPDF()">Gerar pedido / PDF</button><button class="secondary" type="button" onclick="compartilharWhatsApp()">Compartilhar WhatsApp</button></div>
+<div class="muted" style="margin-top:10px;font-size:12px">Use “Gerar recibo PDF” em cada parcela recebida. O pedido/PDF mostra a condição comercial completa. Você ainda pode editar cada parcela manualmente.</div>
+<!-- compatibilidade com versões anteriores --><input id="vProdutos" type="hidden"><input id="vInstalacao" type="hidden"><input id="vFrete" type="hidden"><input id="vDesconto" type="hidden"><input id="vTotal" type="hidden"><input id="vEntrada" type="hidden"><input id="vSaldo" type="hidden"><select id="pagamento" style="display:none"><option>A definir</option></select>
+</div>
+<div class="panel" id="obsPanel"><h3>9. Instalação / entrega e observações finais</h3><div class="form"><div class="field"><label>Previsão</label><input id="previsao" type="date"></div><div class="field span2"><label>Equipe / instalador</label><input id="equipe"></div><div class="field"><label>Prioridade</label><select id="prioridade"><option>Normal</option><option>Alta</option><option>Urgente</option></select></div><div class="field span4"><label>Observações gerais do pedido</label><textarea id="obsGeral"></textarea></div></div></div>
+</section>
+<section id="custosComponentes" class="section"><div class="panel"><h3>Central de Custos • Componentes</h3><div class="muted" style="margin:-6px 0 14px">Cadastre o custo-base de 1 unidade de cada componente. A quantidade fica somente no Pedido. O trilho usa custo por metro; os demais componentes usam custo unitário.</div><div class="comp-door"><div class="comp-head"><b>Componentes</b><span class="muted">Tabela de custos predeterminados • padrão financeiro</span></div><div class="comp-body" id="centralComponentes"></div></div><div class="muted" style="margin-top:12px;font-size:12px">Cada valor é salvo separadamente no próprio componente. Ao escolher novamente a mesma combinação, o valor cadastrado aparece automaticamente.</div></div>
+<div class="panel" id="centralMadeiraPanel"><h3>Central de Custos • Madeira / Cubagem</h3><div class="muted" style="margin:-6px 0 14px">Cadastre o valor por m³ de cada madeira. Estes valores alimentam automaticamente o Cálculo de Cubagem da Madeira nos pedidos.</div><div id="centralMadeira"></div></div>
+<div class="panel" id="centralInstalacaoPanel"><h3>Central de Custos • Gastos com Instalação</h3><div class="muted" style="margin:-6px 0 14px">Cadastre valores-base para os gastos de instalação. Use o mesmo padrão financeiro dos lançamentos de gastos do Pedido.</div><div id="centralInstalacao"></div></div>
+<div class="panel" id="centralMaoObraPanel"><h3>Central de Custos • Gastos com Mão de Obra</h3><div class="muted" style="margin:-6px 0 14px">Cadastre o custo real de cada funcionário. O sistema calcula provisões, custo da hora normal e hora extra. Todos os dados podem ser alterados e novos funcionários podem ser adicionados.</div><div id="centralMaoObra"></div></div>
+</section>
+<section id="pedidos" class="section"><div class="lista-toolbar"><div class="busca"><svg viewBox="0 0 24 24"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM21 21l-5-5"/></svg><input id="buscaPedidos" placeholder="Buscar por número, cliente ou cidade" oninput="renderLista()"></div><span class="muted" id="contagemPedidos"></span></div><div class="panel tabela-panel"><table class="table tabela-pedidos"><thead><tr><th>Pedido</th><th>Cliente</th><th>Obra</th><th>Itens</th><th>Status</th><th></th></tr></thead><tbody id="lista"></tbody></table></div></section>
+<section id="usuarios" class="section"><div id="usuariosConteudo"></div></section>
+
+    </div>
+
+    <div class="barra-acoes" id="barraAcoes">
+      <button type="button" class="btn-sec" id="btnAnterior" onclick="TDMLayout.passo(-1)"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg><span>Anterior</span></button>
+      <div class="barra-centro">
+        <button type="button" class="btn-sec" onclick="TDMLayout.novo()"><span>Novo pedido</span></button>
+        <button type="button" class="btn-pri" onclick="salvarPedido()"><svg viewBox="0 0 24 24"><path d="M5 3h11l3 3v15H5zM8 3v5h7M8 21v-7h8v7"/></svg><span>Salvar pedido</span></button>
+      </div>
+      <button type="button" class="btn-sec" id="btnProxima" onclick="TDMLayout.passo(1)"><span>Próxima</span><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></button>
+    </div>
+  </main>
+</div>
+
+<div id="sectionEditor" class="editor-backdrop"><div class="editor-modal"><div class="editor-top"><div><b id="editorTitle">Editar seção</b><div class="muted" style="font-size:12px">Construtor de campos da TDM</div></div><button class="secondary" type="button" onclick="closeSectionEditor()">Fechar</button></div><div class="editor-content"><div class="editor-help">Monte a seção como peças: escolha o nome, o tipo e onde o campo fica. Para colocar dois campos lado a lado, use 50% nos dois e deixe “Continuar na mesma linha”. Para colocar um embaixo do outro, use 100% ou “Começar nova linha”. As opções avançadas ficam escondidas até você precisar.</div><div class="simple-guide"><div><b>1. O que é?</b><br>Escolha o nome e o tipo do dado.</div><div><b>2. Onde fica?</b><br>Defina largura e se continua ao lado ou começa embaixo.</div><div><b>3. Precisa de algo especial?</b><br>Abra “Mais opções” só quando precisar.</div></div><div class="actions" style="margin-bottom:14px"><button class="primary" type="button" onclick="editorAddField()">+ Adicionar campo</button></div><div id="editorFields"></div><div class="actions" style="margin-top:16px"><button class="primary" type="button" onclick="saveSectionEditor()">Salvar alterações</button><button class="secondary" type="button" onclick="closeSectionEditor()">Cancelar</button></div></div></div></div>
+
+<!-- Relatório -->
+<div id="relatorioModal" class="modal" hidden>
+  <div class="modal-caixa modal-relatorio">
+    <div class="modal-topo">
+      <div><b>Relatório do orçamento</b><small>Visualize e gere o PDF profissional para o cliente</small></div>
+      <button type="button" class="btn-x" onclick="TDMRelatorio.fechar()" aria-label="Fechar">×</button>
+    </div>
+    <div class="rel-corpo">
+      <div class="rel-opcoes">
+        <div class="rel-grupo"><label>Orientação</label>
+          <div class="seg"><label><input type="radio" name="relOrient" value="portrait" checked><span>Retrato</span></label><label><input type="radio" name="relOrient" value="landscape"><span>Paisagem</span></label></div></div>
+        <div class="rel-grupo"><label>Título</label>
+          <select id="relTitulo"><option>Orçamento</option><option>Pedido de venda</option><option>Proposta comercial</option></select></div>
+        <div class="rel-grupo"><label>Validade da proposta (dias)</label><input id="relValidade" type="number" min="0" value="15"></div>
+        <div class="rel-grupo"><label class="check"><input type="checkbox" id="relMostrarParcelas" checked> <span>Mostrar condição de pagamento</span></label></div>
+        <div class="rel-grupo"><label class="check"><input type="checkbox" id="relMostrarObs" checked> <span>Mostrar observações</span></label></div>
+        <div class="rel-grupo rel-pix">
+          <label class="check"><input type="checkbox" id="relPix"> <span><b>Incluir pagamento via Pix</b></span></label>
+          <div class="rel-pix-campos">
+            <label>Chave Pix</label><input id="relPixChave" placeholder="CNPJ, e-mail, telefone ou chave aleatória">
+            <label>Valor no QR Code</label>
+            <select id="relPixValor"><option value="nenhum">Sem valor (cliente digita)</option><option value="total">Valor total</option><option value="primeira">Entrada / 1ª parcela</option></select>
+            <small>A chave fica salva para os próximos relatórios.</small>
+          </div>
+        </div>
+        <div class="rel-botoes">
+          <button type="button" class="btn-pri" id="btnBaixarPdf" onclick="TDMRelatorio.baixar()"><span>Baixar PDF</span></button>
+          <button type="button" class="btn-sec" onclick="TDMRelatorio.imprimir()"><span>Imprimir</span></button>
+        </div>
+      </div>
+      <div class="rel-preview-area"><div class="rel-preview-escala" id="relEscala"><div id="relPreview"></div></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Usuário: novo/editar -->
+<div id="usuarioModal" class="modal" hidden><div class="modal-caixa modal-usuario" id="usuarioModalCaixa"></div></div>
+
+<script src="js/vendor/supabase.js"></script>
+<script src="js/vendor/qrcode.js"></script>
+<script src="js/config.js?v=2"></script>
+<script src="js/auth.js?v=2"></script>
+</body>
+</html>
