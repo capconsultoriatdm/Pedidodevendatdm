@@ -3090,7 +3090,7 @@ $('tdmMasterSair').addEventListener('click',async function(e){
 var Sync=(function(){
   var TABELA='/rest/v1/tdm_dados';
   var PEND='tdm_v193_pendentes', CONHECIDAS='tdm_v193_conhecidas', CARIMBOS='tdm_v193_carimbos', DEV='tdm_v193_dispositivo';
-  var EXCL=/^(tdm_master_session_v193|tdm_v193_.*|tdm_supabase_session|tdm_dispositivo_id|sb-.*)$/;
+  var EXCL=/^(tdm_master_session_v193|tdm_v193_.*|tdm_supabase_session|tdm_dispositivo_id|tdm_backup_estado|sb-.*)$/;
   var proto=Storage.prototype, setOrig=proto.setItem, remOrig=proto.removeItem, clearOrig=proto.clear;
   var pronto=false, ativo=false, silencioso=false, enviando=false, timerEnvio=null, timers=[], ultimo={}, erroTabela=false;
 
@@ -3119,7 +3119,7 @@ var Sync=(function(){
   function erroAmigavel(e){
     if(e instanceof TypeError)return 'Sem internet';
     if(e.status===404||e.code==='PGRST205'||e.code==='42P01'){erroTabela=true;return 'Tabela tdm_dados não existe no Supabase'}
-    if(e.status===401||e.status===403)return 'Sem permissão no Supabase';
+    if(e.status===401||e.status===403){try{console.warn('Supabase tdm_dados:',e.status,e.code,e.message)}catch(_){}return 'Sem permissão no Supabase (execute o script de permissões no SQL Editor)'}
     return e.message||'Erro';
   }
 
