@@ -3433,3 +3433,238 @@ var nav=$('nav');if(nav)new MutationObserver(icones).observe(nav,{childList:true
 var st=$('tdmSyncStatus');if(st)new MutationObserver(espelharStatus).observe(st,{childList:true,characterData:true,attributes:true,subtree:true});
 })();
 </script>
+<style id="tdmBackupStyle">
+#tdmBkOverlay{position:fixed;inset:0;z-index:2147483000;background:rgba(10,30,25,.55);display:none;align-items:flex-start;justify-content:center;padding:24px 12px;overflow:auto;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+#tdmBkOverlay.open{display:flex}
+#tdmBkBox{background:#fff;color:#16302a;border-radius:16px;max-width:620px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden}
+#tdmBkBox .bkhead{background:#0d4f45;color:#fff;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+#tdmBkBox .bkhead h2{margin:0;font-size:19px}
+#tdmBkBox .bkhead button{background:#ffffff26;color:#fff;border:0;border-radius:8px;padding:8px 12px;cursor:pointer;font-weight:700}
+#tdmBkBox .bkbody{padding:18px 20px;display:grid;gap:14px}
+#tdmBkBox .bkcard{border:1px solid #dbe7e3;border-radius:12px;padding:14px;background:#f8fbfa}
+#tdmBkBox .bkcard h3{margin:0 0 10px;font-size:15px}
+#tdmBkBox .bkrow{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+#tdmBkBox label{font-size:13px;font-weight:600;color:#38544d}
+#tdmBkBox input[type=time],#tdmBkBox input[type=number]{border:1px solid #c9dad5;border-radius:8px;padding:8px 10px;font-size:15px}
+#tdmBkBox .bkbtn{border:0;border-radius:9px;padding:10px 14px;font-weight:700;cursor:pointer;background:#0d6b5e;color:#fff}
+#tdmBkBox .bkbtn.sec{background:#e3eeeb;color:#0d4f45}
+#tdmBkBox .bkbtn.warn{background:#b5523f}
+#tdmBkBox .bkdays{display:flex;gap:6px;flex-wrap:wrap}
+#tdmBkBox .bkdays label{display:flex;align-items:center;gap:4px;background:#fff;border:1px solid #c9dad5;border-radius:8px;padding:6px 8px;cursor:pointer}
+#tdmBkBox .bkpasta{font-weight:700;color:#0d4f45}
+#tdmBkBox .bkmuted{font-size:12.5px;color:#5b726c;line-height:1.45}
+#tdmBkBox .bkstatus{font-size:13.5px;line-height:1.6}
+#tdmBkBox .bkok{color:#0d7a4f;font-weight:700}
+#tdmBkBox .bkerr{color:#b5523f;font-weight:700}
+#tdmBkToast{position:fixed;right:16px;bottom:16px;z-index:2147483001;background:#0d4f45;color:#fff;padding:12px 16px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.25);font:600 14px system-ui;max-width:360px;display:none;cursor:default}
+#tdmBkToast.warn{background:#8a4b12;cursor:pointer}
+@media print{#tdmBkOverlay,#tdmBkToast,#tdmBkNavBtn{display:none!important}}
+</style>
+<script id="tdmBackupScript">
+(function(){
+'use strict';
+var CFG_KEY='tdm_backup_config', EST_KEY='tdm_backup_estado';
+/* Chaves que NÃO entram no backup (login, sessão e senha) */
+var EXCLUIR=['tdm_supabase_session','tdm_master_session_v193','tdm_v193_email','tdm_v193_lembrar','tdm_dispositivo_id',EST_KEY];
+function excluida(k){return EXCLUIR.indexOf(k)>=0||/^sb-|auth-token/i.test(k)}
+var DIAS=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+var podePasta=typeof window.showDirectoryPicker==='function';
+var pastaHandle=null;
+
+function lerJSON(k,def){try{var v=JSON.parse(localStorage.getItem(k)||'null');return v==null?def:v}catch(e){return def}}
+function cfg(){var c=lerJSON(CFG_KEY,{});return {ativo:!!c.ativo,horario:c.horario||'18:00',dias:Array.isArray(c.dias)?c.dias:[0,1,2,3,4,5,6],manter:Number(c.manter)||30}}
+function salvarCfg(c){localStorage.setItem(CFG_KEY,JSON.stringify(c))}
+function estado(){return lerJSON(EST_KEY,{})}
+function salvarEstado(e){try{localStorage.setItem(EST_KEY,JSON.stringify(e))}catch(x){}}
+function dois(n){return String(n).padStart(2,'0')}
+function carimbo(d){return d.getFullYear()+'-'+dois(d.getMonth()+1)+'-'+dois(d.getDate())+'_'+dois(d.getHours())+'h'+dois(d.getMinutes())}
+function dataBR(iso){if(!iso)return '—';var d=new Date(iso);return d.toLocaleDateString('pt-BR')+' às '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}
+
+/* ---------- IndexedDB: guarda a pasta escolhida ---------- */
+function db(){return new Promise(function(ok,err){var r=indexedDB.open('tdm_backup_db',1);r.onupgradeneeded=function(){r.result.createObjectStore('kv')};r.onsuccess=function(){ok(r.result)};r.onerror=function(){err(r.error)}})}
+function idbGet(k){return db().then(function(d){return new Promise(function(ok){var t=d.transaction('kv').objectStore('kv').get(k);t.onsuccess=function(){ok(t.result)};t.onerror=function(){ok(null)}})}).catch(function(){return null})}
+function idbSet(k,v){return db().then(function(d){return new Promise(function(ok){var tx=d.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=function(){ok(true)};tx.onerror=function(){ok(false)}})}).catch(function(){return false})}
+
+/* ---------- Monta o conteúdo do backup ---------- */
+function montarBackup(){
+  var dados={};
+  for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(!excluida(k))dados[k]=localStorage.getItem(k)}
+  var ped=lerJSON('tdm_pedidos_completos',[]),cli=lerJSON('tdm_clientes',[]);
+  return {app:'TDM Gestão',tipo:'backup-completo',versao:1,criadoEm:new Date().toISOString(),resumo:{pedidos:Array.isArray(ped)?ped.length:0,clientes:Array.isArray(cli)?cli.length:0,chaves:Object.keys(dados).length},dados:dados};
+}
+
+function baixar(nome,texto){
+  var blob=new Blob([texto],{type:'application/json'});var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');a.href=url;a.download=nome;document.body.appendChild(a);a.click();
+  setTimeout(function(){URL.revokeObjectURL(url);a.remove()},1500);
+}
+
+function permissao(h,pedir){
+  if(!h||!h.queryPermission)return Promise.resolve('denied');
+  return h.queryPermission({mode:'readwrite'}).then(function(p){if(p==='granted'||!pedir)return p;return h.requestPermission({mode:'readwrite'})}).catch(function(){return 'denied'});
+}
+
+function limparAntigos(h,manter){
+  if(!h||!h.entries||!manter)return Promise.resolve();
+  var nomes=[];
+  return (async function(){
+    try{for await (var par of h.entries()){var n=par[0],e=par[1];if(e.kind==='file'&&/^TDM-backup-.*\.json$/.test(n))nomes.push(n)}}catch(e){return}
+    nomes.sort();var apagar=nomes.slice(0,Math.max(0,nomes.length-manter));
+    for(var i=0;i<apagar.length;i++){try{await h.removeEntry(apagar[i])}catch(e){}}
+  })();
+}
+
+/* ---------- Executa o backup ---------- */
+/* origem: 'manual' | 'automatico' */
+function fazerBackup(origem,pedirPermissao){
+  var b=montarBackup(),agora=new Date(),nome='TDM-backup-'+carimbo(agora)+'.json',texto=JSON.stringify(b,null,1);
+  var c=cfg();
+  function registrar(onde){var e=estado();e.ultimo=agora.toISOString();e.onde=onde;e.arquivo=nome;e.origem=origem;e.resumo=b.resumo;if(origem==='automatico')e.ultimoSlot=slotAtual();salvarEstado(e);atualizarTela();return onde}
+  if(pastaHandle){
+    return permissao(pastaHandle,!!pedirPermissao).then(function(p){
+      if(p!=='granted')throw new Error('sem-permissao');
+      return pastaHandle.getFileHandle(nome,{create:true}).then(function(fh){return fh.createWritable()}).then(function(w){return w.write(texto).then(function(){return w.close()})})
+        .then(function(){return limparAntigos(pastaHandle,c.manter)}).then(function(){toast('✓ Backup salvo na pasta "'+pastaHandle.name+'"');return registrar('pasta')});
+    }).catch(function(err){
+      baixar(nome,texto);registrar('downloads');
+      if(String(err&&err.message)==='sem-permissao')toast('⚠ Backup baixado em Downloads. Clique aqui para reautorizar a pasta "'+pastaHandle.name+'".',true);
+      else toast('⚠ Não foi possível gravar na pasta. Backup baixado em Downloads.');
+      return 'downloads';
+    });
+  }
+  baixar(nome,texto);toast('✓ Backup baixado (pasta Downloads)');return Promise.resolve(registrar('downloads'));
+}
+
+/* ---------- Agendamento ---------- */
+function slotAtual(){var c=cfg(),d=new Date(),hm=c.horario.split(':');var s=new Date(d.getFullYear(),d.getMonth(),d.getDate(),+hm[0]||0,+hm[1]||0,0,0);return s.toISOString()}
+function verificarAgenda(){
+  var c=cfg();if(!c.ativo)return;
+  var agora=new Date(),hm=c.horario.split(':');
+  var slot=new Date(agora.getFullYear(),agora.getMonth(),agora.getDate(),+hm[0]||0,+hm[1]||0,0,0);
+  if(agora<slot)return;
+  if(c.dias.indexOf(agora.getDay())<0)return;
+  var e=estado();if(e.ultimoSlot===slot.toISOString())return;
+  e.ultimoSlot=slot.toISOString();salvarEstado(e);
+  fazerBackup('automatico',false);
+}
+function proximo(){
+  var c=cfg();if(!c.ativo)return null;var hm=c.horario.split(':'),agora=new Date(),e=estado();
+  for(var i=0;i<8;i++){var d=new Date(agora.getFullYear(),agora.getMonth(),agora.getDate()+i,+hm[0]||0,+hm[1]||0);if(c.dias.indexOf(d.getDay())<0)continue;if(i===0&&(e.ultimoSlot===d.toISOString()))continue;if(i===0&&d<agora)return agora;return d}
+  return null;
+}
+
+/* ---------- Restaurar ---------- */
+function restaurar(arquivo){
+  var r=new FileReader();
+  r.onload=function(){
+    var b;try{b=JSON.parse(r.result)}catch(e){alert('Arquivo inválido: não é um backup do TDM Gestão.');return}
+    if(!b||!b.dados||typeof b.dados!=='object'){alert('Arquivo inválido: não é um backup do TDM Gestão.');return}
+    var res=b.resumo||{};
+    if(!confirm('Restaurar o backup de '+dataBR(b.criadoEm)+'?\n\nPedidos: '+(res.pedidos??'?')+' · Clientes: '+(res.clientes??'?')+'\n\nOs dados atuais deste aparelho serão SUBSTITUÍDOS pelos do backup. Antes disso, um backup dos dados atuais será baixado por segurança.'))return;
+    baixar('TDM-backup-antes-de-restaurar-'+carimbo(new Date())+'.json',JSON.stringify(montarBackup(),null,1));
+    var manter={};EXCLUIR.concat([CFG_KEY]).forEach(function(k){var v=localStorage.getItem(k);if(v!=null)manter[k]=v});
+    for(var i=localStorage.length-1;i>=0;i--){var k=localStorage.key(i);if(!excluida(k)&&k!==CFG_KEY)localStorage.removeItem(k)}
+    Object.keys(b.dados).forEach(function(k){if(!excluida(k)&&k!==CFG_KEY)try{localStorage.setItem(k,b.dados[k])}catch(e){}});
+    alert('Backup restaurado. O sistema será recarregado.');location.reload();
+  };
+  r.readAsText(arquivo);
+}
+
+/* ---------- Interface ---------- */
+var toastTimer=null;
+function toast(msg,reautorizar){
+  var t=document.getElementById('tdmBkToast');if(!t){t=document.createElement('div');t.id='tdmBkToast';document.body.appendChild(t)}
+  t.textContent=msg;t.className=reautorizar?'warn':'';t.style.display='block';
+  t.onclick=reautorizar?function(){permissao(pastaHandle,true).then(function(p){if(p==='granted'){toast('✓ Pasta reautorizada');atualizarTela()}})}:null;
+  clearTimeout(toastTimer);toastTimer=setTimeout(function(){t.style.display='none'},reautorizar?20000:6000);
+}
+
+function montarTela(){
+  if(document.getElementById('tdmBkOverlay'))return;
+  var o=document.createElement('div');o.id='tdmBkOverlay';
+  o.innerHTML='<div id="tdmBkBox" role="dialog" aria-label="Backup do sistema">'+
+  '<div class="bkhead"><h2>💾 Backup do sistema</h2><button type="button" id="tdmBkFechar">✕ Fechar</button></div><div class="bkbody">'+
+  '<div class="bkcard"><h3>📊 Situação</h3><div class="bkstatus" id="tdmBkStatus"></div></div>'+
+  '<div class="bkcard"><h3>📁 Pasta de destino</h3><div class="bkrow"><span>Pasta atual: <span class="bkpasta" id="tdmBkPastaNome">—</span></span></div>'+
+  '<div class="bkrow" style="margin-top:10px"><button type="button" class="bkbtn" id="tdmBkPasta">Escolher pasta</button><button type="button" class="bkbtn sec" id="tdmBkPastaLimpar">Usar pasta Downloads</button></div>'+
+  '<p class="bkmuted" id="tdmBkPastaInfo"></p></div>'+
+  '<div class="bkcard"><h3>⏰ Backup automático</h3>'+
+  '<div class="bkrow"><label><input type="checkbox" id="tdmBkAtivo"> Ativar backup automático</label></div>'+
+  '<div class="bkrow" style="margin-top:10px"><label>Horário <input type="time" id="tdmBkHora"></label><label>Manter os últimos <input type="number" id="tdmBkManter" min="1" max="999" style="width:80px"> backups na pasta</label></div>'+
+  '<div style="margin-top:10px"><label>Dias da semana</label><div class="bkdays" id="tdmBkDias"></div></div>'+
+  '<div class="bkrow" style="margin-top:12px"><button type="button" class="bkbtn" id="tdmBkSalvar">Salvar configuração</button></div>'+
+  '<p class="bkmuted">O backup automático acontece enquanto o sistema estiver aberto no navegador. Se o sistema estiver fechado no horário, o backup é feito assim que ele for aberto de novo no mesmo dia.</p></div>'+
+  '<div class="bkcard"><h3>🛠️ Ações</h3><div class="bkrow"><button type="button" class="bkbtn" id="tdmBkAgora">Fazer backup agora</button><button type="button" class="bkbtn warn" id="tdmBkRestaurar">Restaurar backup…</button><input type="file" id="tdmBkArquivo" accept=".json,application/json" style="display:none"></div>'+
+  '<p class="bkmuted">O backup inclui pedidos, clientes, Central de Custos (componentes, madeira, instalação, mão de obra), orçamentos, configurações e observações. Login e senha não são incluídos.</p></div>'+
+  '</div></div>';
+  document.body.appendChild(o);
+  var dias=document.getElementById('tdmBkDias');
+  dias.innerHTML=DIAS.map(function(n,i){return '<label><input type="checkbox" value="'+i+'">'+n+'</label>'}).join('');
+  o.addEventListener('click',function(e){if(e.target===o)fechar()});
+  document.getElementById('tdmBkFechar').onclick=fechar;
+  document.getElementById('tdmBkPasta').onclick=escolherPasta;
+  document.getElementById('tdmBkPastaLimpar').onclick=function(){pastaHandle=null;idbSet('pasta',null);atualizarTela();toast('Backups irão para a pasta Downloads')};
+  document.getElementById('tdmBkSalvar').onclick=function(){
+    var c={ativo:document.getElementById('tdmBkAtivo').checked,horario:document.getElementById('tdmBkHora').value||'18:00',
+      dias:[].slice.call(dias.querySelectorAll('input:checked')).map(function(x){return +x.value}),manter:Math.max(1,+document.getElementById('tdmBkManter').value||30)};
+    if(c.ativo&&!c.dias.length){alert('Marque pelo menos um dia da semana.');return}
+    salvarCfg(c);
+    var e=estado(),agora=new Date(),hm=c.horario.split(':'),slot=new Date(agora.getFullYear(),agora.getMonth(),agora.getDate(),+hm[0],+hm[1]);
+    if(slot<=agora){e.ultimoSlot=slot.toISOString();salvarEstado(e)}  /* horário de hoje já passou: começa no próximo */
+    atualizarTela();toast('✓ Configuração de backup salva');
+  };
+  document.getElementById('tdmBkAgora').onclick=function(){fazerBackup('manual',true)};
+  document.getElementById('tdmBkRestaurar').onclick=function(){document.getElementById('tdmBkArquivo').click()};
+  document.getElementById('tdmBkArquivo').onchange=function(e){var f=e.target.files[0];e.target.value='';if(f)restaurar(f)};
+}
+
+function escolherPasta(){
+  if(!podePasta){alert('Este navegador não permite escolher pasta. Use Google Chrome ou Microsoft Edge no computador.\n\nEnquanto isso, os backups serão baixados na pasta Downloads.');return}
+  window.showDirectoryPicker({id:'tdm-backup',mode:'readwrite'}).then(function(h){
+    pastaHandle=h;return idbSet('pasta',h).then(function(){return permissao(h,true)});
+  }).then(function(){atualizarTela();toast('✓ Pasta "'+pastaHandle.name+'" selecionada')}).catch(function(e){if(e&&e.name!=='AbortError')alert('Não foi possível usar essa pasta: '+e.message)});
+}
+
+function atualizarTela(){
+  if(!document.getElementById('tdmBkOverlay'))return;
+  var c=cfg(),e=estado();
+  document.getElementById('tdmBkAtivo').checked=c.ativo;
+  document.getElementById('tdmBkHora').value=c.horario;
+  document.getElementById('tdmBkManter').value=c.manter;
+  [].forEach.call(document.querySelectorAll('#tdmBkDias input'),function(x){x.checked=c.dias.indexOf(+x.value)>=0});
+  document.getElementById('tdmBkPastaNome').textContent=pastaHandle?pastaHandle.name:'Downloads (padrão do navegador)';
+  document.getElementById('tdmBkPastaLimpar').style.display=pastaHandle?'':'none';
+  var info=document.getElementById('tdmBkPastaInfo');
+  if(!podePasta)info.textContent='Este navegador não permite escolher pasta: os backups vão para Downloads. Para escolher a pasta, use Google Chrome ou Microsoft Edge no computador.';
+  else if(pastaHandle)permissao(pastaHandle,false).then(function(p){info.innerHTML=p==='granted'?'<span class="bkok">✓ Pasta autorizada.</span> Os arquivos serão gravados direto nela.':'<span class="bkerr">⚠ O navegador pede para reautorizar a pasta.</span> Clique em "Fazer backup agora" ou em "Escolher pasta" e permita o acesso. Dica: no aviso do Chrome, escolha <b>“Permitir em todas as visitas”</b>.'});
+  else info.textContent='Escolha uma pasta (por exemplo, uma pasta do Google Drive, OneDrive ou um pen drive) para os backups serem gravados direto nela.';
+  var prox=proximo();
+  document.getElementById('tdmBkStatus').innerHTML=
+    'Último backup: <b>'+dataBR(e.ultimo)+'</b>'+(e.ultimo?' · '+(e.onde==='pasta'?'na pasta escolhida':'em Downloads')+(e.origem==='automatico'?' (automático)':' (manual)'):'')+'<br>'+
+    (e.arquivo?'Arquivo: <b>'+e.arquivo+'</b><br>':'')+
+    'Backup automático: '+(c.ativo?'<span class="bkok">ativado</span> · próximo: <b>'+(prox?dataBR(prox.toISOString()):'—')+'</b>':'<span class="bkerr">desativado</span>');
+}
+
+function abrir(){montarTela();atualizarTela();document.getElementById('tdmBkOverlay').classList.add('open')}
+function fechar(){var o=document.getElementById('tdmBkOverlay');if(o)o.classList.remove('open')}
+window.tdmBackupAbrir=abrir;
+window.tdmBackupAgora=function(){return fazerBackup('manual',true)};
+
+function botaoMenu(){
+  var nav=document.getElementById('nav');if(!nav||document.getElementById('tdmBkNavBtn'))return;
+  var b=document.createElement('button');b.type='button';b.id='tdmBkNavBtn';b.dataset.id='backup';b.innerHTML='<svg class="tdm-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h11l3 3v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2z"/><path d="M8 3v5h7V3"/><rect x="8" y="13" width="8" height="6" rx="1"/></svg>Backup';b.onclick=function(e){e.preventDefault();abrir()};nav.appendChild(b);
+}
+
+function iniciar(){
+  botaoMenu();
+  /* algumas telas recriam o menu: garante o botão */
+  setTimeout(botaoMenu,1500);setTimeout(botaoMenu,4000);
+  idbGet('pasta').then(function(h){pastaHandle=h||null;
+    /* se a pasta precisar de reautorização, pede no primeiro clique do usuário */
+    if(pastaHandle&&cfg().ativo)permissao(pastaHandle,false).then(function(p){if(p!=='granted'){document.addEventListener('pointerdown',function f(){document.removeEventListener('pointerdown',f,true);permissao(pastaHandle,true)},true)}});
+    setTimeout(verificarAgenda,3000);setInterval(verificarAgenda,30000);
+  });
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',iniciar);else iniciar();
+})();
+</script>
